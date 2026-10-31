@@ -1,9 +1,11 @@
-require('dotenv').config();
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
+import { prisma } from './config/prisma.js';
+import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
@@ -35,6 +37,7 @@ app.get('/api/health', (req, res) => {
         message: 'Backend server is healthy'
     });
 });
+app.use('/api/auth', authRoutes);
 
 // 404 handler
 app.use((req, res) => {
