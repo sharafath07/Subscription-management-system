@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =====================================
+// ENUMS
+// =====================================
+
+enum UserRole {
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+enum SubscriptionStatus {
+  DRAFT
+  QUOTATION
+  CONFIRMED
+  ACTIVE
+  CLOSED
+}
+
+enum BillingInterval {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  UPI
+  OTHER
+}
+
+// =====================================
+// USER
+// Authentication and roles
+// =====================================
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+
+  customer Customer?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =====================================
+// CUSTOMER
+// =====================================
+
+model Customer {
+  id         String  @id @default(uuid())
+  name       String
+  email      String  @unique
+  phone      String?
+  company    String?
+  address    String?
+  city       String?
+  state      String?
+  country    String?
+  postalCode String?
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  subscriptions Subscription[]
+  invoices      Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =====================================
+// PRODUCT
+// =====================================
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  plans Plan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =====================================
+// PLAN
+// =====================================
+
+model Plan {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  price           Decimal         @db.Decimal(12, 2)
+  billingInterval BillingInterval @default(MONTHLY)
+  trialDays       Int             @default(0)
+  isActive        Boolean         @default(true)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+// =====================================
+// SUBSCRIPTION
+// =====================================
+
+model Subscription {
+  id     String             @id @default(uuid())
+  status SubscriptionStatus @default(DRAFT)
+
+  startDate       DateTime?
+  endDate         DateTime?
+  nextBillingDate DateTime?
+
+  quantity Int     @default(1)
+  notes    String?
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([planId])
+  @@index([status])
+}
+
+// =====================================
+// INVOICE
+// =====================================
+
+model Invoice {
+  id            String @id @default(uuid())
+  invoiceNumber String @unique
+
+  status InvoiceStatus @default(DRAFT)
+
+  issueDate DateTime @default(now())
+  dueDate   DateTime
+
+  subtotal       Decimal @db.Decimal(12, 2)
+  taxRate        Decimal @default(0) @db.Decimal(5, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal @default(0) @db.Decimal(12, 2)
+  total          Decimal @db.Decimal(12, 2)
+  amountPaid     Decimal @default(0) @db.Decimal(12, 2)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+// =====================================
+// PAYMENT
+// =====================================
+
+model Payment {
+  id String @id @default(uuid())
+
+  amount Decimal       @db.Decimal(12, 2)
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  transactionId String?  @unique
+  paymentDate   DateTime @default(now())
+  notes         String?
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([status])
+}
