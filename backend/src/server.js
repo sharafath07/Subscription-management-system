@@ -8,6 +8,7 @@ import { prisma } from './config/prisma.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import planRoutes from './routes/planRoutes.js';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.get('/api/health', (req, res) => {
 });
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/plans', planRoutes);
 app.use('/api/customers', customerRoutes);
 
 // 404 handler
