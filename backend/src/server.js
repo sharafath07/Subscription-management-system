@@ -6,6 +6,7 @@ import morgan from 'morgan';
 
 import { prisma } from './config/prisma.js';
 import authRoutes from './routes/authRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 // 404 handler
 app.use((req, res) => {
