@@ -1,7 +1,9 @@
-import CustomersPage from "./pages/CustomersPage";
+import Payments from "./pages/PaymentsPage";
+import Analytics from "./pages/AnalyticsPage";
+
 
 function App() {
-  return <CustomersPage />;
+  return <Analytics />;
 }
 
 export default App;
