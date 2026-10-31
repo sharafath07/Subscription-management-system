@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import planRoutes from './routes/planRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
 
 const app = express();
 
@@ -40,10 +41,13 @@ app.get('/api/health', (req, res) => {
         message: 'Backend server is healthy'
     });
 });
+
+//API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // 404 handler
 app.use((req, res) => {
