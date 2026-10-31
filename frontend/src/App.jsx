@@ -22,6 +22,7 @@ import CustomerSubscriptionsPage from "./pages/customer/CustomerSubscriptionsPag
 import CustomerInvoicesPage from "./pages/customer/CustomerInvoicesPage";
 import CustomerPaymentsPage from "./pages/customer/CustomerPaymentsPage";
 import CustomerProfilePage from "./pages/customer/CustomerProfilePage";
+import Register from "./pages/Register";
 
 function PlaceholderPage({ title }) {
   return (
@@ -67,6 +68,7 @@ function App() {
 
         {/* Login */}
         <Route path="/login" element={<LoginRoute />} />
+        <Route path="/register" element={<Register />} />
 
         {/* ADMIN and STAFF routes */}
         <Route element={<ProtectedRoute />}>

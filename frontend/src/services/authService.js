@@ -12,15 +12,16 @@ export const loginUser = async (email, password) => {
 };
 
 // REGISTER
-export const registerUser = async (name, email, password) => {
+export const registerUser = async (userData) => {
     const response = await api.post("/auth/register", {
-        name,
-        email,
-        password,
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
     });
 
     return response.data;
 };
+
 
 // GET CURRENT LOGGED-IN USER
 export const getCurrentUser = async () => {
