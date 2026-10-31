@@ -233,7 +233,7 @@ function RecentPayments({ payments }) {
     );
 }
 
-export default function Analytics() {
+export default function AnalyticsPage() {
     const [dashboard, setDashboard] = useState(null);
     const [revenue, setRevenue] = useState(null);
     const [payments, setPayments] = useState([]);

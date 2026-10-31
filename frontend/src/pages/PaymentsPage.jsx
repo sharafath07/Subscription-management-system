@@ -78,7 +78,7 @@ function PaymentStatus({ status }) {
     );
 }
 
-export default function Payments() {
+export default function PaymentsPage() {
 
     // Backend data
     const [payments, setPayments] = useState([]);

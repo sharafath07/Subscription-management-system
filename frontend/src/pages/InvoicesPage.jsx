@@ -65,7 +65,7 @@ function StatusBadge({ status }) {
     );
 }
 
-export default function Invoices() {
+export default function InvoicesPage() {
 
     // Invoice data
     const [invoices, setInvoices] = useState([]);
