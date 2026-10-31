@@ -1,128 +1,156 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCustomerInvoices } from "../../services/customerPortalService";
 
-const invoices = [
-    {
-        id: "INV-20261031-001",
-        issueDate: "2026-10-31",
-        dueDate: "2026-11-07",
-        total: "999.00",
-        amountPaid: "0.00",
-        status: "SENT",
-    },
-    {
-        id: "INV-20261020-002",
-        issueDate: "2026-10-20",
-        dueDate: "2026-10-27",
-        total: "1500.00",
-        amountPaid: "1500.00",
-        status: "PAID",
-    },
-    {
-        id: "INV-20261015-003",
-        issueDate: "2026-10-15",
-        dueDate: "2026-10-22",
-        total: "2000.00",
-        amountPaid: "500.00",
-        status: "PARTIALLY_PAID",
-    },
-];
+import CustomerPageHeader from "../../components/customer/CustomerPageHeader";
+import CustomerLoading from "../../components/customer/CustomerLoading";
+import CustomerError from "../../components/customer/CustomerError";
+import CustomerEmptyState from "../../components/customer/CustomerEmptyState";
+import CustomerStatusBadge from "../../components/customer/CustomerStatusBadge";
+
+import {
+    formatCurrency,
+    formatDate,
+} from "../../utils/customerFormatters";
 
 function CustomerInvoicesPage() {
-    const [filter, setFilter] = useState("ALL");
+    const [invoices, setInvoices] = useState([]);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    const filtered = invoices.filter(
-        (invoice) => filter === "ALL" || invoice.status === filter
-    );
+    const fetchInvoices = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
-    const formatDate = (date) =>
-        new Date(date).toLocaleDateString("en-IN");
+            const response = await getCustomerInvoices();
 
-    const statusStyle = {
-        PAID: "bg-emerald-50 text-emerald-700",
-        SENT: "bg-amber-50 text-amber-700",
-        PARTIALLY_PAID: "bg-blue-50 text-blue-700",
-        OVERDUE: "bg-red-50 text-red-700",
+            if (!response.success || !Array.isArray(response.data)) {
+                throw new Error("Unable to load invoices.");
+            }
+
+            setInvoices(response.data);
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                err.message ||
+                "Failed to load invoices."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <p className="text-sm text-slate-400">Customer Portal / Invoices</p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-800">My Invoices</h1>
-                <p className="mt-2 text-sm text-slate-500">
-                    View your billing history and outstanding amounts.
-                </p>
-            </div>
+    useEffect(() => {
+        fetchInvoices();
+    }, []);
 
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Filter invoices
-                </label>
+    const filteredInvoices = invoices.filter((invoice) => {
+        const matchesSearch =
+            `${invoice.invoiceNumber || ""} ${invoice.status || ""}`
+                .toLowerCase()
+                .includes(search.toLowerCase());
+
+        const matchesStatus =
+            statusFilter === "all" ||
+            invoice.status?.toLowerCase() === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    return (
+        <div>
+            <CustomerPageHeader
+                title="My Invoices"
+                description="View your invoices, payment status and outstanding balances."
+            />
+
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+                <input
+                    type="text"
+                    placeholder="Search invoice number or status..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full max-w-md rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none focus:border-blue-500"
+                />
+
                 <select
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-4 py-3 sm:w-64"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-3"
                 >
-                    <option value="ALL">All invoices</option>
-                    <option value="PAID">Paid</option>
-                    <option value="SENT">Sent</option>
-                    <option value="PARTIALLY_PAID">Partially paid</option>
-                    <option value="OVERDUE">Overdue</option>
+                    <option value="all">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="unpaid">Unpaid</option>
+                    <option value="overdue">Overdue</option>
                 </select>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <table className="w-full min-w-[750px] text-left text-sm">
-                    <thead className="bg-slate-50 text-slate-500">
-                        <tr>
-                            <th className="px-5 py-4">Invoice Number</th>
-                            <th className="px-5 py-4">Issue Date</th>
-                            <th className="px-5 py-4">Due Date</th>
-                            <th className="px-5 py-4">Total</th>
-                            <th className="px-5 py-4">Paid</th>
-                            <th className="px-5 py-4">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {filtered.map((invoice) => (
-                            <tr key={invoice.id}>
-                                <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-800">
-                                    {invoice.id}
-                                </td>
-                                <td className="px-5 py-4 text-slate-500">
-                                    {formatDate(invoice.issueDate)}
-                                </td>
-                                <td className="px-5 py-4 text-slate-500">
-                                    {formatDate(invoice.dueDate)}
-                                </td>
-                                <td className="px-5 py-4 font-medium">
-                                    ₹{Number(invoice.total).toLocaleString("en-IN")}
-                                </td>
-                                <td className="px-5 py-4">
-                                    ₹{Number(invoice.amountPaid).toLocaleString("en-IN")}
-                                </td>
-                                <td className="px-5 py-4">
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyle[invoice.status] || "bg-slate-100 text-slate-600"}`}>
-                                        {invoice.status.replace("_", " ")}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                        {filtered.length === 0 && (
-                            <tr>
-                                <td colSpan="6" className="p-10 text-center text-slate-500">
-                                    No invoices found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            {loading && <CustomerLoading message="Loading invoices..." />}
 
-            <p className="text-center text-xs text-slate-400">
-                Sample invoice data — awaiting Customer API integration.
-            </p>
+            {!loading && error && (
+                <CustomerError
+                    message={error}
+                    onRetry={fetchInvoices}
+                />
+            )}
+
+            {!loading && !error && filteredInvoices.length === 0 && (
+                <CustomerEmptyState
+                    title="No invoices found"
+                    message="Try changing your search or status filter."
+                />
+            )}
+
+            {!loading && !error && filteredInvoices.length > 0 && (
+                <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
+                    <table className="w-full min-w-[750px] text-left text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th className="p-4">Invoice Number</th>
+                                <th className="p-4">Issue Date</th>
+                                <th className="p-4">Due Date</th>
+                                <th className="p-4">Total</th>
+                                <th className="p-4">Paid</th>
+                                <th className="p-4">Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {filteredInvoices.map((invoice) => (
+                                <tr key={invoice.id} className="border-t">
+                                    <td className="p-4 font-semibold text-gray-800">
+                                        {invoice.invoiceNumber || "—"}
+                                    </td>
+
+                                    <td className="p-4 text-gray-600">
+                                        {formatDate(invoice.issueDate)}
+                                    </td>
+
+                                    <td className="p-4 text-gray-600">
+                                        {formatDate(invoice.dueDate)}
+                                    </td>
+
+                                    <td className="p-4 font-medium">
+                                        {formatCurrency(invoice.total)}
+                                    </td>
+
+                                    <td className="p-4 text-green-700">
+                                        {formatCurrency(invoice.amountPaid)}
+                                    </td>
+
+                                    <td className="p-4">
+                                        <CustomerStatusBadge status={invoice.status} />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

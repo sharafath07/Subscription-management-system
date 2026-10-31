@@ -1,107 +1,86 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCustomerProfile } from "../../services/customerPortalService";
+
+import CustomerPageHeader from "../../components/customer/CustomerPageHeader";
+import CustomerLoading from "../../components/customer/CustomerLoading";
+import CustomerError from "../../components/customer/CustomerError";
 
 function CustomerProfilePage() {
-    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const [profile, setProfile] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    const [profile, setProfile] = useState({
-        name: user?.name || "",
-        email: user?.email || "",
-        phone: "",
-        company: "",
-        address: "",
-        city: "",
-        state: "",
-        country: "",
-        postalCode: "",
-    });
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
-    const handleChange = (e) => {
-        setProfile({
-            ...profile,
-            [e.target.name]: e.target.value,
-        });
+            const response = await getCustomerProfile();
+
+            if (!response.success || !response.data) {
+                throw new Error("Unable to load profile.");
+            }
+
+            setProfile(response.data);
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || "Failed to load profile.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        alert("Profile update will be available when the customer API is ready.");
-    };
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    if (loading) return <CustomerLoading message="Loading profile..." />;
+
+    if (error) return <CustomerError message={error} onRetry={fetchProfile} />;
 
     const fields = [
-        { name: "name", label: "Full Name", required: true },
-        { name: "email", label: "Email Address", required: true },
-        { name: "phone", label: "Phone Number" },
-        { name: "company", label: "Company" },
-        { name: "address", label: "Address" },
-        { name: "city", label: "City" },
-        { name: "state", label: "State" },
-        { name: "country", label: "Country" },
-        { name: "postalCode", label: "Postal Code" },
+        ["Full Name", profile.name],
+        ["Email", profile.email],
+        ["Phone", profile.phone],
+        ["Company", profile.company],
+        ["Address", profile.address],
+        ["City", profile.city],
+        ["State", profile.state],
+        ["Country", profile.country],
+        ["Postal Code", profile.postalCode],
     ];
 
     return (
-        <div className="space-y-6">
-            <div>
-                <p className="text-sm text-slate-400">Customer Portal / Profile</p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-800">
-                    My Profile
-                </h1>
-                <p className="mt-2 text-sm text-slate-500">
-                    View and manage your personal information.
-                </p>
-            </div>
+        <div>
+            <CustomerPageHeader
+                title="My Profile"
+                description="View your personal and account information."
+            />
 
-            <form
-                onSubmit={handleSubmit}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-                <div className="mb-6 border-b border-slate-100 pb-5">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-2xl font-bold text-indigo-700">
-                        {profile.name.charAt(0).toUpperCase() || "C"}
+            <div className="max-w-3xl rounded-xl bg-white p-6 shadow-sm">
+                <div className="mb-6 flex items-center gap-4 border-b pb-6">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-3xl">
+                        👤
                     </div>
-
-                    <h2 className="mt-3 text-lg font-semibold text-slate-800">
-                        Personal Information
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                        Keep your contact information up to date.
-                    </p>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">{profile.name || "Customer"}</h2>
+                        <p className="text-sm text-gray-500">{profile.email}</p>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    {fields.map((field) => (
-                        <div key={field.name}>
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
-                                {field.label}
-                            </label>
-
-                            <input
-                                name={field.name}
-                                type={field.name === "email" ? "email" : "text"}
-                                value={profile[field.name]}
-                                onChange={handleChange}
-                                required={field.required || false}
-                                readOnly={field.name === "email"}
-                                className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-500 read-only:bg-slate-50"
-                            />
+                    {fields.map(([label, value]) => (
+                        <div key={label}>
+                            <p className="text-xs font-semibold uppercase text-gray-400">{label}</p>
+                            <p className="mt-1 text-sm font-medium text-gray-800">{value || "Not provided"}</p>
                         </div>
                     ))}
                 </div>
 
-                <div className="mt-7 flex justify-end">
-                    <button
-                        type="submit"
-                        className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
-                    >
-                        Save Changes
-                    </button>
-                </div>
-
-                <p className="mt-4 text-xs text-slate-400">
-                    Profile editing will be enabled after the customer API is implemented.
+                <p className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+                    Profile editing is not available yet. Contact the administrator to update your information.
                 </p>
-            </form>
+            </div>
         </div>
     );
 }

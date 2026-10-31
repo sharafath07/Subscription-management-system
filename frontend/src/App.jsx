@@ -78,30 +78,9 @@ function App() {
             <Route path="/plans" element={<PlansPage />} />
             <Route path="/subscriptions" element={<SubscriptionsPage />} />
 
-            <Route
-              path="/quotations"
-              element={<PlaceholderPage title="Quotations" />}
-            />
-
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-
-            <Route
-              path="/discounts"
-              element={<PlaceholderPage title="Discounts" />}
-            />
-
-            <Route
-              path="/reports"
-              element={<PlaceholderPage title="Reports" />}
-            />
-
-            <Route
-              path="/settings"
-              element={<PlaceholderPage title="Settings" />}
-            />
-
           </Route>
         </Route>
 

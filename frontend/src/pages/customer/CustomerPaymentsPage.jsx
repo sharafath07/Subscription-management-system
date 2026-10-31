@@ -1,127 +1,150 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCustomerPayments } from "../../services/customerPortalService";
 
-const payments = [
-    {
-        id: "PAY-001",
-        amount: "999.00",
-        method: "UPI",
-        status: "COMPLETED",
-        transactionId: "UPI-DEMO-001",
-        paymentDate: "2026-10-31",
-    },
-    {
-        id: "PAY-002",
-        amount: "1500.00",
-        method: "CARD",
-        status: "COMPLETED",
-        transactionId: "CARD-DEMO-002",
-        paymentDate: "2026-10-25",
-    },
-    {
-        id: "PAY-003",
-        amount: "500.00",
-        method: "BANK_TRANSFER",
-        status: "PENDING",
-        transactionId: "BANK-DEMO-003",
-        paymentDate: "2026-10-20",
-    },
-];
+import CustomerPageHeader from "../../components/customer/CustomerPageHeader";
+import CustomerLoading from "../../components/customer/CustomerLoading";
+import CustomerError from "../../components/customer/CustomerError";
+import CustomerEmptyState from "../../components/customer/CustomerEmptyState";
+import CustomerStatusBadge from "../../components/customer/CustomerStatusBadge";
+
+import {
+    formatCurrency,
+    formatDate,
+} from "../../utils/customerFormatters";
 
 function CustomerPaymentsPage() {
-    const [filter, setFilter] = useState("ALL");
+    const [payments, setPayments] = useState([]);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-    const filtered = payments.filter(
-        (payment) => filter === "ALL" || payment.status === filter
-    );
+    const fetchPayments = async () => {
+        try {
+            setLoading(true);
+            setError("");
 
-    const statusStyle = {
-        COMPLETED: "bg-emerald-50 text-emerald-700",
-        PENDING: "bg-amber-50 text-amber-700",
-        FAILED: "bg-red-50 text-red-700",
+            const response = await getCustomerPayments();
+
+            if (!response.success || !Array.isArray(response.data)) {
+                throw new Error("Unable to load payments.");
+            }
+
+            setPayments(response.data);
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                err.message ||
+                "Failed to load payments."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <p className="text-sm text-slate-400">Customer Portal / Payments</p>
-                <h1 className="mt-2 text-3xl font-bold text-slate-800">
-                    My Payments
-                </h1>
-                <p className="mt-2 text-sm text-slate-500">
-                    View your payment history and transaction details.
-                </p>
-            </div>
+    useEffect(() => {
+        fetchPayments();
+    }, []);
 
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Filter payments
-                </label>
+    const filteredPayments = payments.filter((payment) => {
+        const matchesSearch =
+            `${payment.transactionId || ""} ${payment.method || ""} ${payment.status || ""}`
+                .toLowerCase()
+                .includes(search.toLowerCase());
+
+        const matchesStatus =
+            statusFilter === "all" ||
+            payment.status?.toLowerCase() === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    return (
+        <div>
+            <CustomerPageHeader
+                title="Payment History"
+                description="Review your previous subscription payments."
+            />
+
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+                <input
+                    type="text"
+                    placeholder="Search transaction or payment method..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full max-w-md rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none focus:border-blue-500"
+                />
+
                 <select
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-4 py-3 sm:w-64"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-3"
                 >
-                    <option value="ALL">All payments</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="FAILED">Failed</option>
+                    <option value="all">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
                 </select>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <table className="w-full min-w-[750px] text-left text-sm">
-                    <thead className="bg-slate-50 text-slate-500">
-                        <tr>
-                            <th className="px-5 py-4">Payment ID</th>
-                            <th className="px-5 py-4">Amount</th>
-                            <th className="px-5 py-4">Method</th>
-                            <th className="px-5 py-4">Transaction ID</th>
-                            <th className="px-5 py-4">Date</th>
-                            <th className="px-5 py-4">Status</th>
-                        </tr>
-                    </thead>
+            {loading && <CustomerLoading message="Loading payments..." />}
 
-                    <tbody className="divide-y divide-slate-100">
-                        {filtered.map((payment) => (
-                            <tr key={payment.id}>
-                                <td className="px-5 py-4 font-medium text-slate-800">
-                                    {payment.id}
-                                </td>
-                                <td className="px-5 py-4 font-semibold text-slate-800">
-                                    ₹{Number(payment.amount).toLocaleString("en-IN")}
-                                </td>
-                                <td className="px-5 py-4 text-slate-600">
-                                    {payment.method.replace("_", " ")}
-                                </td>
-                                <td className="px-5 py-4 text-slate-500">
-                                    {payment.transactionId}
-                                </td>
-                                <td className="px-5 py-4 text-slate-500">
-                                    {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
-                                </td>
-                                <td className="px-5 py-4">
-                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyle[payment.status] || "bg-slate-100 text-slate-600"}`}>
-                                        {payment.status}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
+            {!loading && error && (
+                <CustomerError
+                    message={error}
+                    onRetry={fetchPayments}
+                />
+            )}
 
-                        {filtered.length === 0 && (
+            {!loading && !error && filteredPayments.length === 0 && (
+                <CustomerEmptyState
+                    title="No payments found"
+                    message="Try changing your search or status filter."
+                />
+            )}
+
+            {!loading && !error && filteredPayments.length > 0 && (
+                <div className="overflow-x-auto rounded-xl bg-white shadow-sm">
+                    <table className="w-full min-w-[750px] text-left text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
                             <tr>
-                                <td colSpan="6" className="p-10 text-center text-slate-500">
-                                    No payments found.
-                                </td>
+                                <th className="p-4">Transaction ID</th>
+                                <th className="p-4">Date</th>
+                                <th className="p-4">Method</th>
+                                <th className="p-4">Amount</th>
+                                <th className="p-4">Status</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
 
-            <p className="text-center text-xs text-slate-400">
-                Sample payment data — awaiting Customer API integration.
-            </p>
+                        <tbody>
+                            {filteredPayments.map((payment) => (
+                                <tr key={payment.id} className="border-t">
+                                    <td className="p-4 font-medium text-gray-800">
+                                        {payment.transactionId || "—"}
+                                    </td>
+
+                                    <td className="p-4 text-gray-600">
+                                        {formatDate(payment.paymentDate)}
+                                    </td>
+
+                                    <td className="p-4 text-gray-600">
+                                        {payment.method || "—"}
+                                    </td>
+
+                                    <td className="p-4 font-semibold">
+                                        {formatCurrency(payment.amount)}
+                                    </td>
+
+                                    <td className="p-4">
+                                        <CustomerStatusBadge status={payment.status} />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
